@@ -7,13 +7,14 @@
 
 
 # This module provides association services
+import copy
+import logging
+import time
+
 from DULparameters import *
 from PDU import MaximumLengthParameters
 from dicom.UID import UID
-import socket
-import time
-
-import logging
+from netdicom.DULprovider import DULServiceProvider
 logger = logging.getLogger(__name__)
 
 
@@ -98,7 +99,7 @@ class ACSEServiceProvider(object):
         of the request sends association response based on
         AcceptablePresentationContexts"""
         if self.DUL is None:
-            self.DUL = DUL(Socket=client_socket)
+            self.DUL = DULServiceProvider(Socket=client_socket)
         assoc = self.DUL.Receive(Wait=True)
         if assoc is None:
             return None
@@ -148,7 +149,9 @@ class ACSEServiceProvider(object):
                 rsp.append((ii[0], 1, ''))
 
         # Send response
-        res = assoc
+        res = copy.copy(assoc)
+        res.CallingAETitle = assoc.CalledAETitle
+        res.CalledAETitle = assoc.CallingAETitle
         res.PresentationContextDefinitionList = []
         res.PresentationContextDefinitionResultList = rsp
         res.Result = 0
